@@ -65,11 +65,14 @@ class Election:
         await self._vote_if_real_data_exist()
 
     async def receive_data(self, data: Data):
+        self._logger.critical(f"DATA Received! {data.header.height}")
         if data.is_real() and data.proposer_id == self._node_id:
             self._is_proposed = True
 
         self._messages.add_data(data)
+        self._logger.critical(f"Update result")
         await self._update_result()
+        self._logger.critical(f"_vote_if_available")
         await self._vote_if_available(data)
 
     async def receive_vote(self, vote: Vote):
@@ -172,13 +175,16 @@ class Election:
         self._is_ended = self._messages.result and self._messages.result.is_determinative()
 
     async def _vote_if_real_data_exist(self):
+        print("DATAS: ", self._messages._datums)
         first_real_data = self._messages.first_real_data
+        print("FIRST REAL DATA: ", first_real_data)
         if first_real_data:
             await self._verify_and_broadcast_vote(first_real_data)
             await self._update_result()
             self._is_voted = True
 
     async def _vote_if_available(self, data: Data):
+        self._logger.warning("_vote_if_available")
         if not self._is_started:
             return
         if self._is_ended:
@@ -186,15 +192,19 @@ class Election:
         if self._is_voted:
             return
 
+        self._logger.warning("_verify_and_broadcast_vote")
         await self._verify_and_broadcast_vote(data)
         self._is_voted = True
 
     async def _verify_and_broadcast_vote(self, data):
+        self._logger.warning(f"Verify data!!")
         if await self._verify_data(data):
+            self._logger.warning(f"Try to make vote...")
             vote = await self._vote_factory.create_vote(data_id=data.id,
                                                         commit_id=self._candidate_id,
                                                         epoch_num=self._epoch.num,
                                                         round_num=self._round_num)
+            self._logger.critical(f"Voted!")
         else:
             vote = self._vote_factory.create_none_vote(epoch_num=self._epoch.num,
                                                        round_num=self._round_num)
@@ -204,15 +214,19 @@ class Election:
         if self._candidate_id != data.prev_id:
             return False
         candidate_data = self._data_pool.get_data(self._candidate_id)
+        self._logger.warning(f"height")
         if candidate_data.number + 1 != data.number:
             return False
+        self._logger.warning(f"lazy")
         if data.is_lazy():
             return False
         try:
             await self._data_verifier.verify(candidate_data, data)
         except Exception as e:
+            self._logger.warning(f"Data Verification Failed!!{e}")
             return False
         else:
+            self._logger.warning(f"Finally success")
             return True
 
 

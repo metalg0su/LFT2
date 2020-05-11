@@ -354,6 +354,7 @@ class AppLauncher:
 
         await self.new_epoch()
         await self.round_start()
+        print("Await votes...")
         await asyncio.sleep(1)
         await self.pass_vote_to_consensus()
 

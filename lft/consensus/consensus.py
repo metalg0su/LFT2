@@ -44,6 +44,7 @@ class Consensus(EventRegister):
         await self.round_start(event.epoch, event.round_num)
 
     async def _on_event_receive_data(self, event: ReceiveDataEvent):
+        self._logger.critical(f"Consensus Received!: {event.data.header.height}")
         await self.receive_data(event.data)
 
     async def _on_event_receive_vote(self, event: ReceiveVoteEvent):
@@ -85,17 +86,23 @@ class Consensus(EventRegister):
 
     async def receive_data(self, data: 'Data'):
         await self._receive_prev_votes(data)
+        self._logger.critical(f"_receive_prev_votes")
 
         try:
+            self._logger.critical(f"try _verify_acceptable_data")
             self._verify_acceptable_data(data)
-        except (InvalidEpoch, InvalidRound, InvalidProposer):
+        except (InvalidEpoch, InvalidRound, InvalidProposer) as e:
+            self._logger.critical(f"exc: {e}")
             return
         self._data_pool.add_data(data)
 
         try:
+            self._logger.critical(f"try _verify_round_message")
             self._verify_round_message(data)
         except InvalidRound:
+            self._logger.critical(f"invalid round")
             return
+        self._logger.critical(f"_receive_data_and_change_candidate_if_available")
         await self._receive_data_and_change_candidate_if_available(data)
 
     async def receive_vote(self, vote: 'Vote'):
@@ -127,10 +134,15 @@ class Consensus(EventRegister):
 
     async def _receive_vote_and_change_candidate_if_available(self, vote: 'Vote'):
         round_ = self._new_or_get_round(vote.epoch_num, vote.round_num)
+        print("ROund: ", round_)
         if not vote.is_none() and not vote.is_lazy():
+            print("Vote deserves!")
             async with self._try_change_candidate(round_, pruning_messages=True):
+                print("_try_change_candidate")
                 await round_.receive_vote(vote)
+                print("real vote received!")
         else:
+            print("not real vote received!")
             await round_.receive_vote(vote)
 
     def _verify_acceptable_message(self, message: 'Message'):
@@ -156,6 +168,8 @@ class Consensus(EventRegister):
     def _verify_acceptable_data(self, data: 'Data'):
         self._verify_acceptable_message(data)
         epoch = self._get_epoch(data.epoch_num)
+        self._logger.warning(f"Epoch?: {epoch}, {epoch.get_proposer_id(round_num=data.round_num)}")
+        self._logger.warning(f"dd?: {data.proposer_id, type(data.proposer_id)}")
         epoch.verify_proposer(data.proposer_id, data.round_num)
 
     def _verify_acceptable_vote(self, vote: 'Vote'):
