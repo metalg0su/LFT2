@@ -129,6 +129,7 @@ class Round:
         lazy_data = self._data_factory.create_lazy_data(self._epoch.num,
                                                         self._num,
                                                         expected_proposer)
+        self._logger.warning(f"new_unreal_datums: (lazy_data {lazy_data}")
         await self._raise_receive_data(delay=TIMEOUT_PROPOSE, data=lazy_data)
 
     async def _receive_votes_if_exist(self, data: Data):

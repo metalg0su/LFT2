@@ -106,6 +106,7 @@ class Consensus(EventRegister):
         await self._receive_data_and_change_candidate_if_available(data)
 
     async def receive_vote(self, vote: 'Vote'):
+        self._logger.warning(f"Vote received: {vote}")
         try:
             self._verify_acceptable_vote(vote)
         except (InvalidEpoch, InvalidRound, InvalidVoter):
@@ -134,15 +135,10 @@ class Consensus(EventRegister):
 
     async def _receive_vote_and_change_candidate_if_available(self, vote: 'Vote'):
         round_ = self._new_or_get_round(vote.epoch_num, vote.round_num)
-        print("ROund: ", round_)
         if not vote.is_none() and not vote.is_lazy():
-            print("Vote deserves!")
             async with self._try_change_candidate(round_, pruning_messages=True):
-                print("_try_change_candidate")
                 await round_.receive_vote(vote)
-                print("real vote received!")
         else:
-            print("not real vote received!")
             await round_.receive_vote(vote)
 
     def _verify_acceptable_message(self, message: 'Message'):
