@@ -13,8 +13,8 @@ from lft.event.mediators import DelayedEventMediator
 
 __all__ = ("Round", "RoundMessages", "RoundPool", "TIMEOUT_PROPOSE", "TIMEOUT_VOTE")
 
-TIMEOUT_PROPOSE = 2.0
-TIMEOUT_VOTE = 2.0
+TIMEOUT_PROPOSE = 6.0
+TIMEOUT_VOTE = 6.0
 
 
 class Round:
